@@ -46,3 +46,8 @@ func (p LoginPayload) Validate() error {
 		validation.Field(&p.Password, validation.Required, validation.Length(5, 15)),
 	)
 }
+
+type ListCustomerPayload struct {
+	PhoneNumber string `schema:"phoneNumber" binding:"omitempty"`
+	Name        string `schema:"name" binding:"omitempty"`
+}

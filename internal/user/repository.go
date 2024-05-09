@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
 )
@@ -12,6 +13,7 @@ type Repository interface {
 	Create(ctx context.Context, user *User) error
 	GetByPhoneNumberAndUserType(ctx context.Context, phoneNumber string, userType UserType) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
+	ListCustomers(ctx context.Context, req ListCustomerPayload) ([]*User, error)
 }
 
 type dbRepository struct {
@@ -73,4 +75,31 @@ func (d *dbRepository) GetByID(ctx context.Context, id string) (*User, error) {
 		return nil, err
 	}
 	return u, nil
+}
+
+// ListCustomers implements Repository.
+func (d *dbRepository) ListCustomers(ctx context.Context, req ListCustomerPayload) ([]*User, error) {
+	listQuery := "SELECT id, phone_number, name FROM users WHERE "
+	params := make([]interface{}, 0)
+	if req.PhoneNumber != "" {
+		listQuery += fmt.Sprintf("phone_number LIKE '%%%s%%' AND ", req.PhoneNumber)
+	}
+	if req.Name != "" {
+		listQuery += "lower(name) = lower($1)"
+		params = append(params, req.Name)
+	}
+	rows, err := d.db.DB().QueryContext(ctx, listQuery, params...)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*User, 0)
+	for rows.Next() {
+		u := &User{}
+		err := rows.Scan(&u.ID, &u.PhoneNumber, &u.Name)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, u)
+	}
+	return res, nil
 }

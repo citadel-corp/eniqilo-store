@@ -6,6 +6,7 @@ import (
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/request"
 	"github.com/citadel-corp/eniqilo-store/internal/common/response"
+	"github.com/gorilla/schema"
 )
 
 type Handler struct {
@@ -137,5 +138,29 @@ func (h *Handler) StaffLogin(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusOK, response.ResponseBody{
 		Message: "User logged successfully",
 		Data:    userResp,
+	})
+}
+
+func (h *Handler) ListCustomers(w http.ResponseWriter, r *http.Request) {
+	newSchema := schema.NewDecoder()
+	newSchema.IgnoreUnknownKeys(true)
+
+	var req ListCustomerPayload
+	if err := newSchema.Decode(&req, r.URL.Query()); err != nil {
+		response.JSON(w, http.StatusBadRequest, response.ResponseBody{})
+		return
+	}
+
+	res, err := h.service.ListCustomers(r.Context(), req)
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, response.ResponseBody{
+			Message: "Internal server error",
+			Error:   err.Error(),
+		})
+		return
+	}
+	response.JSON(w, http.StatusOK, response.ResponseBody{
+		Message: "success",
+		Data:    res,
 	})
 }

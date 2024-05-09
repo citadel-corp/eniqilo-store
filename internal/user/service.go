@@ -14,6 +14,7 @@ type Service interface {
 	CreateStaff(ctx context.Context, req CreateStaffPayload) (*StaffResponse, error)
 	CreateCustomer(ctx context.Context, req CreateCustomerPayload) (*CustomerResponse, error)
 	StaffLogin(ctx context.Context, req LoginPayload) (*StaffResponse, error)
+	ListCustomers(ctx context.Context, req ListCustomerPayload) ([]*CustomerResponse, error)
 }
 
 type userService struct {
@@ -120,4 +121,21 @@ func (s *userService) StaffLogin(ctx context.Context, req LoginPayload) (*StaffR
 		Name:        user.Name,
 		AccessToken: accessToken,
 	}, nil
+}
+
+// ListCustomer implements Service.
+func (s *userService) ListCustomers(ctx context.Context, req ListCustomerPayload) ([]*CustomerResponse, error) {
+	customers, err := s.repository.ListCustomers(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*CustomerResponse, len(customers))
+	for i, customer := range customers {
+		res[i] = &CustomerResponse{
+			UserID:      customer.ID,
+			PhoneNumber: customer.PhoneNumber,
+			Name:        customer.Name,
+		}
+	}
+	return res, nil
 }
