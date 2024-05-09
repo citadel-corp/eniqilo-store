@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	slogHandler := tint.NewHandler(os.Stdout, &tint.Options{
+	slogHandler := tint.NewHandler(os.Stderr, &tint.Options{
 		Level:      slog.LevelDebug,
 		TimeFormat: time.RFC3339,
 	})
@@ -65,13 +65,13 @@ func main() {
 		io.WriteString(w, "Service ready")
 	})
 
-	// user routes
-	ur := v1.PathPrefix("/user").Subrouter()
-	ur.HandleFunc("/register", userHandler.CreateUser).Methods(http.MethodPost)
-	ur.HandleFunc("/login", userHandler.Login).Methods(http.MethodPost)
+	// staff routes
+	sr := v1.PathPrefix("/staff").Subrouter()
+	sr.HandleFunc("/register", userHandler.CreateStaff).Methods(http.MethodPost)
+	sr.HandleFunc("/login", userHandler.StaffLogin).Methods(http.MethodPost)
 
 	httpServer := &http.Server{
-		Addr:     ":8000",
+		Addr:     ":8080",
 		Handler:  r,
 		ErrorLog: slog.NewLogLogger(slogHandler, slog.LevelError),
 	}

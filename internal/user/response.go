@@ -1,7 +1,8 @@
 package user
 
-type UserResponse struct {
-	Username    string `json:"username"`
+type StaffResponse struct {
+	UserID      string `json:"userId"`
+	PhoneNumber string `json:"phoneNumber"`
 	Name        string `json:"name"`
 	AccessToken string `json:"accessToken"`
 }

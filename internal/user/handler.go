@@ -16,7 +16,7 @@ func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
-func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CreateStaff(w http.ResponseWriter, r *http.Request) {
 	var req CreateUserPayload
 
 	err := request.DecodeJSON(w, r, &req)
@@ -27,8 +27,8 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	userResp, err := h.service.Create(r.Context(), req)
-	if errors.Is(err, ErrUsernameAlreadyExists) {
+	userResp, err := h.service.CreateStaff(r.Context(), req)
+	if errors.Is(err, ErrPhoneNumberAlreadyExists) {
 		response.JSON(w, http.StatusConflict, response.ResponseBody{
 			Message: "User already exists",
 			Error:   err.Error(),
@@ -55,7 +55,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) StaffLogin(w http.ResponseWriter, r *http.Request) {
 	var req LoginPayload
 
 	err := request.DecodeJSON(w, r, &req)
@@ -66,7 +66,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	userResp, err := h.service.Login(r.Context(), req)
+	userResp, err := h.service.StaffLogin(r.Context(), req)
 	if errors.Is(err, ErrUserNotFound) {
 		response.JSON(w, http.StatusNotFound, response.ResponseBody{
 			Message: "Not found",

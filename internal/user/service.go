@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/citadel-corp/eniqilo-store/internal/common/id"
 	"github.com/citadel-corp/eniqilo-store/internal/common/jwt"
 	"github.com/citadel-corp/eniqilo-store/internal/common/password"
 )
 
 type Service interface {
-	Create(ctx context.Context, req CreateUserPayload) (*UserResponse, error)
-	Login(ctx context.Context, req LoginPayload) (*UserResponse, error)
+	CreateStaff(ctx context.Context, req CreateUserPayload) (*StaffResponse, error)
+	StaffLogin(ctx context.Context, req LoginPayload) (*StaffResponse, error)
 }
 
 type userService struct {
@@ -22,7 +23,7 @@ func NewService(repository Repository) Service {
 	return &userService{repository: repository}
 }
 
-func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*UserResponse, error) {
+func (s *userService) CreateStaff(ctx context.Context, req CreateUserPayload) (*StaffResponse, error) {
 	err := req.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
@@ -32,7 +33,9 @@ func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*UserR
 		return nil, err
 	}
 	user := &User{
-		Username:       req.Username,
+		ID:             id.GenerateStringID(16),
+		UserType:       Staff,
+		PhoneNumber:    req.PhoneNumber,
 		Name:           req.Name,
 		HashedPassword: hashedPassword,
 	}
@@ -41,23 +44,24 @@ func (s *userService) Create(ctx context.Context, req CreateUserPayload) (*UserR
 		return nil, err
 	}
 	// create access token with signed jwt
-	accessToken, err := jwt.Sign(time.Minute*2, fmt.Sprint(user.ID))
+	accessToken, err := jwt.Sign(time.Hour*2, fmt.Sprint(user.ID))
 	if err != nil {
 		return nil, err
 	}
-	return &UserResponse{
-		Username:    req.Username,
+	return &StaffResponse{
+		UserID:      user.ID,
+		PhoneNumber: req.PhoneNumber,
 		Name:        req.Name,
 		AccessToken: accessToken,
 	}, nil
 }
 
-func (s *userService) Login(ctx context.Context, req LoginPayload) (*UserResponse, error) {
+func (s *userService) StaffLogin(ctx context.Context, req LoginPayload) (*StaffResponse, error) {
 	err := req.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
 	}
-	user, err := s.repository.GetByUsername(ctx, req.Username)
+	user, err := s.repository.GetByPhoneNumber(ctx, req.PhoneNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -69,12 +73,13 @@ func (s *userService) Login(ctx context.Context, req LoginPayload) (*UserRespons
 		return nil, ErrWrongPassword
 	}
 	// create access token with signed jwt
-	accessToken, err := jwt.Sign(time.Minute*2, fmt.Sprint(user.ID))
+	accessToken, err := jwt.Sign(time.Hour*2, fmt.Sprint(user.ID))
 	if err != nil {
 		return nil, err
 	}
-	return &UserResponse{
-		Username:    user.Username,
+	return &StaffResponse{
+		UserID:      user.ID,
+		PhoneNumber: user.PhoneNumber,
 		Name:        user.Name,
 		AccessToken: accessToken,
 	}, nil
