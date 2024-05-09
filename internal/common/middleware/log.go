@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/citadel-corp/go-project-template/internal/common/id"
-	"github.com/citadel-corp/go-project-template/internal/common/response"
+	"github.com/citadel-corp/eniqilo-store/internal/common/id"
+	"github.com/citadel-corp/eniqilo-store/internal/common/response"
 )
 
 type LogResponseWriter struct {
