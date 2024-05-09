@@ -11,7 +11,8 @@ import (
 )
 
 type Service interface {
-	CreateStaff(ctx context.Context, req CreateUserPayload) (*StaffResponse, error)
+	CreateStaff(ctx context.Context, req CreateStaffPayload) (*StaffResponse, error)
+	CreateCustomer(ctx context.Context, req CreateCustomerPayload) (*CustomerResponse, error)
 	StaffLogin(ctx context.Context, req LoginPayload) (*StaffResponse, error)
 }
 
@@ -23,16 +24,23 @@ func NewService(repository Repository) Service {
 	return &userService{repository: repository}
 }
 
-func (s *userService) CreateStaff(ctx context.Context, req CreateUserPayload) (*StaffResponse, error) {
+func (s *userService) CreateStaff(ctx context.Context, req CreateStaffPayload) (*StaffResponse, error) {
 	err := req.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
+	}
+	user, err := s.repository.GetByPhoneNumberAndUserType(ctx, req.PhoneNumber, Staff)
+	if err != nil {
+		return nil, err
+	}
+	if user != nil {
+		return nil, ErrPhoneNumberAlreadyExists
 	}
 	hashedPassword, err := password.Hash(req.Password)
 	if err != nil {
 		return nil, err
 	}
-	user := &User{
+	user = &User{
 		ID:             id.GenerateStringID(16),
 		UserType:       Staff,
 		PhoneNumber:    req.PhoneNumber,
@@ -56,12 +64,41 @@ func (s *userService) CreateStaff(ctx context.Context, req CreateUserPayload) (*
 	}, nil
 }
 
+func (s *userService) CreateCustomer(ctx context.Context, req CreateCustomerPayload) (*CustomerResponse, error) {
+	err := req.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
+	}
+	user, err := s.repository.GetByPhoneNumberAndUserType(ctx, req.PhoneNumber, Customer)
+	if err != nil {
+		return nil, err
+	}
+	if user != nil {
+		return nil, ErrPhoneNumberAlreadyExists
+	}
+	user = &User{
+		ID:          id.GenerateStringID(16),
+		UserType:    Staff,
+		PhoneNumber: req.PhoneNumber,
+		Name:        req.Name,
+	}
+	err = s.repository.Create(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return &CustomerResponse{
+		UserID:      user.ID,
+		PhoneNumber: req.PhoneNumber,
+		Name:        req.Name,
+	}, nil
+}
+
 func (s *userService) StaffLogin(ctx context.Context, req LoginPayload) (*StaffResponse, error) {
 	err := req.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
 	}
-	user, err := s.repository.GetByPhoneNumber(ctx, req.PhoneNumber)
+	user, err := s.repository.GetByPhoneNumberAndUserType(ctx, req.PhoneNumber, Staff)
 	if err != nil {
 		return nil, err
 	}

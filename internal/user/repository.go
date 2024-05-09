@@ -6,12 +6,11 @@ import (
 	"errors"
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type Repository interface {
 	Create(ctx context.Context, user *User) error
-	GetByPhoneNumber(ctx context.Context, phoneNumber string) (*User, error)
+	GetByPhoneNumberAndUserType(ctx context.Context, phoneNumber string, userType UserType) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
 }
 
@@ -29,36 +28,24 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 		INSERT INTO users (
 			id, phone_number, name, user_type, hashed_password
 		) VALUES (
-			$1, $2, $3
+			$1, $2, $3, $4, $5
 		);
 	`
-	row := d.db.DB().QueryRowContext(ctx, createUserQuery, user.ID, user.PhoneNumber, user.Name, user.UserType, user.HashedPassword)
-	var id string
-	err := row.Scan(&id)
-	var pgErr *pgconn.PgError
+	_, err := d.db.DB().ExecContext(ctx, createUserQuery, user.ID, user.PhoneNumber, user.Name, user.UserType, user.HashedPassword)
 	if err != nil {
-		if errors.As(err, &pgErr) {
-			switch pgErr.Code {
-			case "23505":
-				return ErrPhoneNumberAlreadyExists
-			default:
-				return err
-			}
-		}
 		return err
 	}
-	user.ID = id
 	return nil
 }
 
 // GetByUsernameAndHashedPassword implements Repository.
-func (d *dbRepository) GetByPhoneNumber(ctx context.Context, phoneNumber string) (*User, error) {
+func (d *dbRepository) GetByPhoneNumberAndUserType(ctx context.Context, phoneNumber string, userType UserType) (*User, error) {
 	getUserQuery := `
 		SELECT id, phone_number, name, user_type, hashed_password
 		FROM users
-		WHERE phone_number = $1;
+		WHERE phone_number = $1 AND user_type = $2;
 	`
-	row := d.db.DB().QueryRowContext(ctx, getUserQuery, phoneNumber)
+	row := d.db.DB().QueryRowContext(ctx, getUserQuery, phoneNumber, userType)
 	u := &User{}
 	err := row.Scan(&u.ID, &u.PhoneNumber, &u.Name, &u.UserType, &u.HashedPassword)
 	if errors.Is(err, sql.ErrNoRows) {
