@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +32,7 @@ func (s *userService) CreateStaff(ctx context.Context, req CreateStaffPayload) (
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
 	}
 	user, err := s.repository.GetByPhoneNumberAndUserType(ctx, req.PhoneNumber, Staff)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return nil, err
 	}
 	if user != nil {
@@ -71,7 +72,7 @@ func (s *userService) CreateCustomer(ctx context.Context, req CreateCustomerPayl
 		return nil, fmt.Errorf("%w: %w", ErrValidationFailed, err)
 	}
 	user, err := s.repository.GetByPhoneNumberAndUserType(ctx, req.PhoneNumber, Customer)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
 		return nil, err
 	}
 	if user != nil {
