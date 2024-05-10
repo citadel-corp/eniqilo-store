@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS
 users (
     id VARCHAR(16) PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
-    phone_number VARCHAR(16) NOT NULL UNIQUE,
+    phone_number VARCHAR(16) NOT NULL,
     user_type user_types NOT NULL,
-    hashed_password BYTEA NOT NULL,
+    hashed_password BYTEA,
     created_at TIMESTAMP DEFAULT current_timestamp
 );
 

@@ -70,6 +70,11 @@ func main() {
 	sr.HandleFunc("/register", userHandler.CreateStaff).Methods(http.MethodPost)
 	sr.HandleFunc("/login", userHandler.StaffLogin).Methods(http.MethodPost)
 
+	// customer routes
+	cr := v1.PathPrefix("/customer").Subrouter()
+	cr.HandleFunc("/register", middleware.Authorized(userHandler.CreateCustomer)).Methods(http.MethodPost)
+	cr.HandleFunc("", middleware.Authorized(userHandler.ListCustomers)).Methods(http.MethodGet)
+
 	httpServer := &http.Server{
 		Addr:     ":8080",
 		Handler:  r,
