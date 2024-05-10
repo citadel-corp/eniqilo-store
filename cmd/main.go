@@ -14,6 +14,7 @@ import (
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
 	"github.com/citadel-corp/eniqilo-store/internal/common/middleware"
+	"github.com/citadel-corp/eniqilo-store/internal/product"
 	"github.com/citadel-corp/eniqilo-store/internal/user"
 	"github.com/gorilla/mux"
 	"github.com/lmittmann/tint"
@@ -55,6 +56,11 @@ func main() {
 	userService := user.NewService(userRepository)
 	userHandler := user.NewHandler(userService)
 
+	// initialize product domain
+	productRepository := product.NewRepository(db)
+	productService := product.NewService(productRepository)
+	productHandler := product.NewHandler(productService)
+
 	r := mux.NewRouter()
 	r.Use(middleware.Logging)
 	r.Use(middleware.PanicRecoverer)
@@ -69,6 +75,10 @@ func main() {
 	sr := v1.PathPrefix("/staff").Subrouter()
 	sr.HandleFunc("/register", userHandler.CreateStaff).Methods(http.MethodPost)
 	sr.HandleFunc("/login", userHandler.StaffLogin).Methods(http.MethodPost)
+
+	// staff routes
+	pr := v1.PathPrefix("/product").Subrouter()
+	pr.HandleFunc("", middleware.Authorized(productHandler.CreateProduct)).Methods(http.MethodPost)
 
 	// customer routes
 	cr := v1.PathPrefix("/customer").Subrouter()
