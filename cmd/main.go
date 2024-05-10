@@ -80,6 +80,11 @@ func main() {
 	pr := v1.PathPrefix("/product").Subrouter()
 	pr.HandleFunc("", middleware.Authorized(productHandler.CreateProduct)).Methods(http.MethodPost)
 
+	// customer routes
+	cr := v1.PathPrefix("/customer").Subrouter()
+	cr.HandleFunc("/register", middleware.Authorized(userHandler.CreateCustomer)).Methods(http.MethodPost)
+	cr.HandleFunc("", middleware.Authorized(userHandler.ListCustomers)).Methods(http.MethodGet)
+
 	httpServer := &http.Server{
 		Addr:     ":8080",
 		Handler:  r,
