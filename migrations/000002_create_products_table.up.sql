@@ -3,7 +3,7 @@ CREATE TYPE product_categories AS ENUM('Clothing', 'Accessories', 'Footwear', 'B
 CREATE TABLE IF NOT EXISTS
 products (
     id VARCHAR(16) PRIMARY KEY,
-    user_id VARCHAR(16) NOT NULL,
+    -- user_id VARCHAR(16) NOT NULL,
     name VARCHAR(30) NOT NULL,
     sku VARCHAR(30) NOT NULL,
     category product_categories NOT NULL,
@@ -16,13 +16,13 @@ products (
     created_at TIMESTAMP DEFAULT current_timestamp
 );
 
-ALTER TABLE products
-    ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id);
+-- ALTER TABLE products
+--     ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id);
 
 CREATE INDEX IF NOT EXISTS products_name
 	ON products USING HASH(lower(name));
-CREATE INDEX IF NOT EXISTS products_user_id
-	ON products (user_id);
+-- CREATE INDEX IF NOT EXISTS products_user_id
+-- 	ON products (user_id);
 CREATE INDEX IF NOT EXISTS products_sku
 	ON products USING HASH(sku);
 CREATE INDEX IF NOT EXISTS products_category

@@ -29,12 +29,10 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 		INSERT INTO users (
 			id, phone_number, name, user_type, hashed_password
 		) VALUES (
-			$1, $2, $3
-		);
+			$1, $2, $3, $4, $5
+		) RETURNING id;
 	`
-	row := d.db.DB().QueryRowContext(ctx, createUserQuery, user.ID, user.PhoneNumber, user.Name, user.UserType, user.HashedPassword)
-	var id string
-	err := row.Scan(&id)
+	_, err := d.db.DB().ExecContext(ctx, createUserQuery, user.ID, user.PhoneNumber, user.Name, user.UserType, user.HashedPassword)
 	var pgErr *pgconn.PgError
 	if err != nil {
 		if errors.As(err, &pgErr) {
@@ -47,7 +45,6 @@ func (d *dbRepository) Create(ctx context.Context, user *User) error {
 		}
 		return err
 	}
-	user.ID = id
 	return nil
 }
 
