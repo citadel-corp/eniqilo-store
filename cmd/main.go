@@ -64,7 +64,7 @@ func main() {
 
 	// initialize checkout domain
 	checkoutRepository := checkout.NewRepository(db)
-	checkoutService := checkout.NewService(checkoutRepository)
+	checkoutService := checkout.NewService(checkoutRepository, userRepository, productRepository)
 	checkoutHandler := checkout.NewHandler(checkoutService)
 
 	r := mux.NewRouter()
@@ -88,6 +88,7 @@ func main() {
 
 	// product checkout routes
 	pcr := pr.PathPrefix("/checkout").Subrouter()
+	pcr.HandleFunc("", middleware.Authorized(checkoutHandler.CheckoutProducts)).Methods(http.MethodPost)
 	pcr.HandleFunc("/history", middleware.Authorized(checkoutHandler.ListCheckoutHistories)).Methods(http.MethodGet)
 
 	// customer routes

@@ -2,18 +2,86 @@ package checkout
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/citadel-corp/eniqilo-store/internal/common/id"
+	"github.com/citadel-corp/eniqilo-store/internal/product"
+	"github.com/citadel-corp/eniqilo-store/internal/user"
 )
 
 type Service interface {
+	CheckoutProducts(ctx context.Context, req CheckoutRequest) error
 	ListCheckoutHistories(ctx context.Context, req ListCheckoutHistoriesPayload) ([]*CheckoutHistoryResponse, error)
 }
 
 type checkoutService struct {
-	repository Repository
+	repository        Repository
+	userRepository    user.Repository
+	productRepository product.Repository
 }
 
-func NewService(repository Repository) Service {
-	return &checkoutService{repository: repository}
+func NewService(repository Repository, userRepository user.Repository, productRepository product.Repository) Service {
+	return &checkoutService{
+		repository:        repository,
+		userRepository:    userRepository,
+		productRepository: productRepository,
+	}
+}
+
+// CheckoutProducts implements Service.
+func (s *checkoutService) CheckoutProducts(ctx context.Context, req CheckoutRequest) error {
+	if err := req.Validate(); err != nil {
+		return fmt.Errorf("%w: %w", ErrValidationFailed, err)
+	}
+	productIDs := make([]string, len(req.ProductDetails))
+	productMap := make(map[string]ProductDetailRequest, len(req.ProductDetails))
+	productDetails := make([]ProductDetail, len(req.ProductDetails))
+	for i, productDetail := range req.ProductDetails {
+		if err := productDetail.Validate(); err != nil {
+			return fmt.Errorf("%w: %w", ErrValidationFailed, err)
+		}
+		productIDs[i] = productDetail.ProductID
+		productMap[productDetail.ProductID] = productDetail
+		productDetails[i] = ProductDetail{
+			ProductID: productDetail.ProductID,
+			Quantity:  productDetail.Quantity,
+		}
+	}
+
+	user, err := s.userRepository.GetByID(ctx, req.CustomerID)
+	if err != nil {
+		return err
+	}
+	products, err := s.productRepository.GetByMultipleID(ctx, productIDs)
+	if err != nil {
+		return err
+	}
+
+	price := int64(0)
+	for _, product := range products {
+		if !product.IsAvailable {
+			return ErrProductUnavailable
+		}
+		if product.Stock-productMap[product.ID].Quantity < 0 {
+			return ErrProductStockNotEnough
+		}
+		price += product.Price
+	}
+	if price <= int64(req.Paid) {
+		return ErrNotEnoughMoney
+	}
+	change := req.Paid - int(price)
+	if change != *req.Change {
+		return ErrWrongChange
+	}
+	ch := &CheckoutHistory{
+		ID:             id.GenerateStringID(16),
+		UserID:         user.ID,
+		ProductDetails: productDetails,
+		Paid:           req.Paid,
+		Change:         *req.Change,
+	}
+	return s.repository.CreateCheckoutHistory(ctx, ch)
 }
 
 func (s *checkoutService) ListCheckoutHistories(ctx context.Context, req ListCheckoutHistoriesPayload) ([]*CheckoutHistoryResponse, error) {

@@ -15,6 +15,7 @@ var ProductCategories = []interface{}{CategoryAccessories, CategoryFootwear, Cat
 
 type Product struct {
 	ID          string
+	UserID      string
 	Name        string
 	SKU         string
 	Category    ProductCategory

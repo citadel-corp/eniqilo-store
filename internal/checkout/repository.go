@@ -9,6 +9,7 @@ import (
 )
 
 type Repository interface {
+	CreateCheckoutHistory(ctx context.Context, ch *CheckoutHistory) error
 	ListCheckoutHistories(ctx context.Context, req ListCheckoutHistoriesPayload) ([]*CheckoutHistory, error)
 }
 
@@ -20,7 +21,23 @@ func NewRepository(db *db.DB) Repository {
 	return &dbRepository{db: db}
 }
 
-// ListCustomers implements Repository.
+// CreateCheckoutHistory implements Repository.
+func (d *dbRepository) CreateCheckoutHistory(ctx context.Context, ch *CheckoutHistory) error {
+	q := `
+		INSERT INTO checkout_histories (
+			id, user_id, product_details, paid, change
+		) VALUES (
+			$1, $2, $3, $4, $5
+		);
+	`
+	_, err := d.db.DB().ExecContext(ctx, q, ch.ID, ch.UserID, ch.ProductDetails, ch.Paid, ch.Change)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// ListCheckoutHistories implements Repository.
 func (d *dbRepository) ListCheckoutHistories(ctx context.Context, req ListCheckoutHistoriesPayload) ([]*CheckoutHistory, error) {
 	var query bytes.Buffer
 	_, _ = query.WriteString("SELECT * FROM checkout_histories ")
