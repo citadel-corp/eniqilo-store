@@ -80,6 +80,7 @@ func main() {
 
 	// product routes
 	pr := v1.PathPrefix("/product").Subrouter()
+	pr.HandleFunc("/customer", middleware.Authorized(productHandler.ListProductForCustomer)).Methods(http.MethodGet)
 	pr.HandleFunc("", middleware.Authorized(productHandler.CreateProduct)).Methods(http.MethodPost)
 	pr.HandleFunc("/{id}", middleware.Authorized(productHandler.EditProduct)).Methods(http.MethodPut)
 	pr.HandleFunc("/{id}", middleware.Authorized(productHandler.DeleteProduct)).Methods(http.MethodDelete)
