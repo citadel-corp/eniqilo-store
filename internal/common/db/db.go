@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"os"
 	"regexp"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/rs/zerolog/log"
 )
 
 type DB struct {
@@ -61,13 +61,13 @@ func (db *DB) UpMigration() error {
 			err = db.migrationErrorHandler(err, m)
 		}
 		if err == nil {
-			slog.Info("Successfully running up migrations.")
+			log.Info().Msg("Successfully running up migrations.")
 			return nil
 		}
 
 		limit += 1
 		if limit == 5 {
-			slog.Error("Failed running up migrations.")
+			log.Error().Msg("Failed running up migrations.")
 			return err
 		}
 	}
@@ -85,13 +85,13 @@ func (db *DB) DownMigration() error {
 			err = db.migrationErrorHandler(err, m)
 		}
 		if err == nil {
-			slog.Info("Successfully running down migrations.")
+			log.Info().Msg("Successfully running down migrations.")
 			return nil
 		}
 
 		limit += 1
 		if limit == 5 {
-			slog.Error("Failed running down migrations.")
+			log.Info().Msg("Failed running down migrations.")
 			return err
 		}
 	}
@@ -114,7 +114,7 @@ func (db *DB) createMigrate() (*migrate.Migrate, error) {
 }
 
 func (db *DB) migrationErrorHandler(err error, m *migrate.Migrate) error {
-	slog.Info(fmt.Sprintf("migration: handling error: %v", err))
+	log.Info().Msg(fmt.Sprintf("migration: handling error: %v", err))
 	if strings.Contains(err.Error(), "Dirty database") {
 		re := regexp.MustCompile("[0-9]+")
 		s := re.FindAllString(err.Error(), -1)

@@ -2,11 +2,11 @@ package middleware
 
 import (
 	"fmt"
-	"log/slog"
 	"net/http"
 	"runtime/debug"
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/response"
+	"github.com/rs/zerolog/log"
 )
 
 func PanicRecoverer(next http.Handler) http.Handler {
@@ -15,7 +15,7 @@ func PanicRecoverer(next http.Handler) http.Handler {
 			r := recover()
 			if r != nil {
 				if r != http.ErrAbortHandler {
-					slog.Error(fmt.Sprintf("Recovered from panic: %s", string(debug.Stack())))
+					log.Error().Msg(fmt.Sprintf("Recovered from panic: %s", string(debug.Stack())))
 				}
 				response.JSON(w, http.StatusInternalServerError, response.ResponseBody{
 					Message: "Internal server error",

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,16 +17,13 @@ import (
 	"github.com/citadel-corp/eniqilo-store/internal/product"
 	"github.com/citadel-corp/eniqilo-store/internal/user"
 	"github.com/gorilla/mux"
-	"github.com/lmittmann/tint"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	slogHandler := tint.NewHandler(os.Stderr, &tint.Options{
-		Level:      slog.LevelDebug,
-		TimeFormat: time.RFC3339,
-	})
-	slog.SetDefault(slog.New(slogHandler))
-
+	zerolog.TimeFieldFormat = time.RFC3339
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	// Connect to database
 	// env := os.Getenv("ENV")
 	// sslMode := "disable"
@@ -41,14 +37,14 @@ func main() {
 	// 	os.Getenv("DB_HOST"), os.Getenv("DB_PORT"), os.Getenv("DB_USERNAME"), os.Getenv("DB_PASSWORD"), os.Getenv("DB_NAME"), sslMode)
 	db, err := db.Connect(connStr)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Cannot connect to database: %v", err))
+		log.Error().Msg(fmt.Sprintf("Cannot connect to database: %v", err))
 		os.Exit(1)
 	}
 
 	// Create migrations
 	// err = db.UpMigration()
 	// if err != nil {
-	// 	slog.Error(fmt.Sprintf("Up migration failed: %v", err))
+	// 	log.Error().Msg(fmt.Sprintf("Up migration failed: %v", err))
 	// 	os.Exit(1)
 	// }
 
@@ -100,17 +96,16 @@ func main() {
 	cr.HandleFunc("", middleware.Authorized(userHandler.ListCustomers)).Methods(http.MethodGet)
 
 	httpServer := &http.Server{
-		Addr:     ":8080",
-		Handler:  r,
-		ErrorLog: slog.NewLogLogger(slogHandler, slog.LevelError),
+		Addr:    ":8080",
+		Handler: r,
 	}
 
 	go func() {
-		slog.Info(fmt.Sprintf("HTTP server listening on %s", httpServer.Addr))
+		log.Info().Msg(fmt.Sprintf("HTTP server listening on %s", httpServer.Addr))
 		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			slog.Error(fmt.Sprintf("HTTP server error: %v", err))
+			log.Error().Msg(fmt.Sprintf("HTTP server error: %v", err))
 		}
-		slog.Info("Stopped serving new connections.")
+		log.Info().Msg("Stopped serving new connections.")
 	}()
 
 	// Listen for the termination signal
@@ -122,9 +117,9 @@ func main() {
 	shutdownCtx, shutdownRelease := context.WithTimeout(context.Background(), 10*time.Second)
 	defer shutdownRelease()
 
-	slog.Info(fmt.Sprintf("Shutting down HTTP server listening on %s", httpServer.Addr))
+	log.Info().Msg(fmt.Sprintf("Shutting down HTTP server listening on %s", httpServer.Addr))
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		slog.Error("HTTP server shutdown error: %v", err)
+		log.Error().Msg(fmt.Sprintf("HTTP server shutdown error: %v", err))
 	}
-	slog.Info("Shutdown complete.")
+	log.Info().Msg("Shutdown complete.")
 }
