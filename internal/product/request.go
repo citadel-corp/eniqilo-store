@@ -1,6 +1,7 @@
 package product
 
 import (
+	"errors"
 	"regexp"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -20,10 +21,13 @@ type CreateProductPayload struct {
 	Price       int64           `json:"price"`
 	Stock       int             `json:"stock"`
 	Location    string          `json:"location"`
-	IsAvailable bool            `json:"isAvailable"`
+	IsAvailable *bool           `json:"isAvailable"`
 }
 
 func (p CreateProductPayload) Validate() error {
+	if p.IsAvailable == nil {
+		return errors.New("isAvailable: required field")
+	}
 	return validation.ValidateStruct(&p,
 		validation.Field(&p.Name, validation.Required, validation.Length(1, 30)),
 		validation.Field(&p.SKU, validation.Required, validation.Length(1, 30)),
@@ -33,7 +37,6 @@ func (p CreateProductPayload) Validate() error {
 		validation.Field(&p.Price, validation.Required, validation.Min(1)),
 		validation.Field(&p.Stock, validation.Required, validation.Min(1)),
 		validation.Field(&p.Location, validation.Required, validation.Length(1, 200)),
-		validation.Field(&p.IsAvailable, validation.Required),
 	)
 }
 
@@ -47,10 +50,13 @@ type EditProductPayload struct {
 	Price       int64           `json:"price"`
 	Stock       int             `json:"stock"`
 	Location    string          `json:"location"`
-	IsAvailable bool            `json:"isAvailable"`
+	IsAvailable *bool           `json:"isAvailable"`
 }
 
 func (p EditProductPayload) Validate() error {
+	if p.IsAvailable == nil {
+		return errors.New("isAvailable: required field")
+	}
 	return validation.ValidateStruct(&p,
 		validation.Field(&p.ID, validation.Required),
 		validation.Field(&p.Name, validation.Required, validation.Length(1, 30)),
@@ -61,7 +67,6 @@ func (p EditProductPayload) Validate() error {
 		validation.Field(&p.Price, validation.Required, validation.Min(1)),
 		validation.Field(&p.Stock, validation.Required, validation.Min(1)),
 		validation.Field(&p.Location, validation.Required, validation.Length(1, 200)),
-		validation.Field(&p.IsAvailable, validation.Required),
 	)
 }
 
@@ -73,4 +78,17 @@ func (p DeleteProductPayload) Validate() error {
 	return validation.ValidateStruct(&p,
 		validation.Field(&p.ID, validation.Required),
 	)
+}
+
+type ListProductPayload struct {
+	ID          string `schema:"id" binding:"omitempty"`
+	Limit       int    `schema:"limit" binding:"omitempty"`
+	Offset      int    `schema:"offset" binding:"omitempty"`
+	Name        string `schema:"name" binding:"omitempty"`
+	IsAvailable string `schema:"isAvailable" binding:"omitempty"`
+	Category    string `schema:"category" binding:"omitempty"`
+	SKU         string `schema:"sku" binding:"omitempty"`
+	Price       string `schema:"price" binding:"omitempty"`
+	InStock     string `schema:"inStock" binding:"omitempty"`
+	CreatedAt   string `schema:"createdAt" binding:"omitempty"`
 }
