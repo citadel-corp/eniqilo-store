@@ -3,6 +3,7 @@ package checkout
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
@@ -23,18 +24,33 @@ func NewRepository(db *db.DB) Repository {
 
 // CreateCheckoutHistory implements Repository.
 func (d *dbRepository) CreateCheckoutHistory(ctx context.Context, ch *CheckoutHistory) error {
-	q := `
+	return d.db.StartTx(ctx, func(tx *sql.Tx) error {
+		q := `
 		INSERT INTO checkout_histories (
 			id, user_id, product_details, paid, change
 		) VALUES (
 			$1, $2, $3, $4, $5
 		);
 	`
-	_, err := d.db.DB().ExecContext(ctx, q, ch.ID, ch.UserID, ch.ProductDetails, ch.Paid, ch.Change)
-	if err != nil {
-		return err
-	}
-	return nil
+		_, err := d.db.DB().ExecContext(ctx, q, ch.ID, ch.UserID, ch.ProductDetails, ch.Paid, ch.Change)
+		if err != nil {
+			return err
+		}
+
+		for _, productDetail := range ch.ProductDetails {
+			q = `
+				UPDATE products
+				SET stock = stock - $1
+				WHERE id = $2;
+			`
+			_, err := d.db.DB().ExecContext(ctx, q, productDetail.Quantity, productDetail.ProductID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
 }
 
 // ListCheckoutHistories implements Repository.

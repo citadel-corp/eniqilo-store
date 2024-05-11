@@ -43,12 +43,25 @@ func (d *dbRepository) Create(ctx context.Context, product *Product) (*Product, 
 }
 
 func (d *dbRepository) GetByMultipleID(ctx context.Context, ids []string) ([]*Product, error) {
+	if len(ids) == 0 {
+		return make([]*Product, 0), nil
+	}
 	q := `
 		SELECT *
 		FROM products
-		WHERE id IN ?;
+		WHERE id IN(
 	`
-	rows, err := d.db.DB().QueryContext(ctx, q, ids)
+
+	for i, v := range ids {
+		if i > 0 {
+			q += ","
+		}
+		q += fmt.Sprintf("'%s'", v)
+
+	}
+
+	q += ");"
+	rows, err := d.db.DB().QueryContext(ctx, q)
 	if err != nil {
 		return nil, err
 	}

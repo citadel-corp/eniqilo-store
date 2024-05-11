@@ -80,7 +80,7 @@ func (s *userService) CreateCustomer(ctx context.Context, req CreateCustomerPayl
 	}
 	user = &User{
 		ID:          id.GenerateStringID(16),
-		UserType:    Staff,
+		UserType:    Customer,
 		PhoneNumber: req.PhoneNumber,
 		Name:        req.Name,
 	}
