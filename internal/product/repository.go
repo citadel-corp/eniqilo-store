@@ -2,6 +2,8 @@ package product
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
 )
@@ -11,6 +13,7 @@ type Repository interface {
 	GetByMultipleID(ctx context.Context, ids []string) ([]*Product, error)
 	Put(ctx context.Context, product *Product) error
 	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, req ListProductPayload) ([]Product, error)
 }
 
 type dbRepository struct {
@@ -53,7 +56,7 @@ func (d *dbRepository) GetByMultipleID(ctx context.Context, ids []string) ([]*Pr
 	res := make([]*Product, 0)
 	for rows.Next() {
 		p := &Product{}
-		err := rows.Scan(&p.ID, &p.UserID, &p.Name, &p.SKU, &p.Category, &p.ImageURL, &p.Notes, &p.Price, &p.Stock, &p.Location, &p.IsAvailable, &p.CreatedAt)
+		err := rows.Scan(&p.ID, &p.Name, &p.SKU, &p.Category, &p.ImageURL, &p.Notes, &p.Price, &p.Stock, &p.Location, &p.IsAvailable, &p.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -99,4 +102,104 @@ func (d *dbRepository) Delete(ctx context.Context, id string) error {
 		return ErrProductNotFound
 	}
 	return nil
+}
+
+func (d *dbRepository) List(ctx context.Context, req ListProductPayload) ([]Product, error) {
+	q := `
+		SELECT id, name, sku, category, image_url, stock, notes, price, location, is_available, created_at
+		FROM products
+	`
+	paramNo := 1
+	params := make([]interface{}, 0)
+	if req.ID != "" {
+		q += fmt.Sprintf("WHERE id = $%d ", paramNo)
+		paramNo += 1
+		params = append(params, req.ID)
+	}
+	if req.Name != "" {
+		q += whereOrAnd(paramNo)
+		q += fmt.Sprintf("LOWER(name) LIKE $%d ", paramNo)
+		paramNo += 1
+		params = append(params, "%"+req.Name+"%")
+	}
+	if v, err := strconv.ParseBool(req.IsAvailable); err == nil {
+		q += whereOrAnd(paramNo)
+		q += fmt.Sprintf("is_available = $%d ", paramNo)
+		paramNo += 1
+		params = append(params, v)
+	}
+	if v, err := ParseProductCategory(req.Category); err == nil {
+		q += whereOrAnd(paramNo)
+		q += fmt.Sprintf("category = $%d ", paramNo)
+		paramNo += 1
+		params = append(params, v)
+	}
+	if req.SKU != "" {
+		q += whereOrAnd(paramNo)
+		q += fmt.Sprintf("sku = $%d ", paramNo)
+		paramNo += 1
+		params = append(params, req.SKU)
+	}
+
+	if v, err := strconv.ParseBool(req.InStock); err == nil {
+		q += whereOrAnd(paramNo)
+		if v {
+			q += "stock > 0 "
+		} else {
+			q += "stock = 0 "
+		}
+	}
+
+	var orderedByPrice bool
+	if req.Price != "" {
+		if req.Price == "asc" || req.Price == "desc" {
+			orderedByPrice = true
+			orderBy := "asc"
+			if req.Price == "desc" {
+				orderBy = "desc"
+			}
+
+			q += `ORDER BY price ` + orderBy
+		}
+	}
+
+	orderByCreatedAt := "desc"
+	if req.CreatedAt == "asc" || req.CreatedAt == "desc" {
+		if req.CreatedAt == "asc" {
+			orderByCreatedAt = "asc"
+		}
+	}
+
+	if orderedByPrice {
+		q += `, created_at ` + orderByCreatedAt
+	} else {
+		q += `ORDER BY created_at ` + orderByCreatedAt
+	}
+
+	q += fmt.Sprintf(" OFFSET $%d LIMIT $%d", paramNo, paramNo+1)
+	params = append(params, req.Offset)
+	params = append(params, req.Limit)
+
+	rows, err := d.db.DB().QueryContext(ctx, q, params...)
+	if err != nil {
+		return nil, err
+	}
+	res := make([]Product, 0)
+	for rows.Next() {
+		product := Product{}
+		err = rows.Scan(&product.ID, &product.Name, &product.SKU, &product.Category, &product.ImageURL, &product.Stock,
+			&product.Notes, &product.Price, &product.Location, &product.IsAvailable, &product.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, product)
+	}
+	return res, nil
+}
+
+func whereOrAnd(paramNo int) string {
+	if paramNo == 1 {
+		return "WHERE "
+	}
+	return "OR "
 }

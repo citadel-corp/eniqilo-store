@@ -6,6 +6,7 @@ import (
 	"github.com/citadel-corp/eniqilo-store/internal/common/request"
 	"github.com/citadel-corp/eniqilo-store/internal/common/response"
 	"github.com/gorilla/mux"
+	"github.com/gorilla/schema"
 )
 
 type Handler struct {
@@ -130,5 +131,31 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusOK, response.ResponseBody{
 		Message: "Product deleted successfully",
+	})
+}
+
+func (h *Handler) ListProduct(w http.ResponseWriter, r *http.Request) {
+	var req ListProductPayload
+
+	newSchema := schema.NewDecoder()
+	newSchema.IgnoreUnknownKeys(true)
+
+	if err := newSchema.Decode(&req, r.URL.Query()); err != nil {
+		response.JSON(w, http.StatusBadRequest, response.ResponseBody{})
+		return
+	}
+
+	products, err := h.service.List(r.Context(), req)
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, response.ResponseBody{
+			Message: "Internal server error",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.ResponseBody{
+		Message: "Products fetched successfully",
+		Data:    products,
 	})
 }
