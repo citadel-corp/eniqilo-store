@@ -29,6 +29,8 @@ func Connect(dbURL string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	db.SetMaxIdleConns(25)
+	db.SetMaxOpenConns(25)
 	return &DB{sqlDB: db}, nil
 }
 
