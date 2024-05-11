@@ -8,6 +8,7 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, req CreateProductPayload) (*ProductResponse, error)
+	Edit(ctx context.Context, req EditProductPayload) error
 }
 
 type productService struct {
@@ -41,4 +42,25 @@ func (s *productService) Create(ctx context.Context, req CreateProductPayload) (
 		ID:        product.ID,
 		CreatedAt: product.CreatedAt,
 	}, nil
+}
+
+func (s *productService) Edit(ctx context.Context, req EditProductPayload) error {
+	product := &Product{
+		ID:          req.ID,
+		Name:        req.Name,
+		SKU:         req.SKU,
+		Category:    req.Category,
+		ImageURL:    req.ImageURL,
+		Notes:       req.Notes,
+		Price:       req.Price,
+		Stock:       req.Stock,
+		Location:    req.Location,
+		IsAvailable: req.IsAvailable,
+	}
+	err := s.repository.Put(ctx, product)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
