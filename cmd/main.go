@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/citadel-corp/eniqilo-store/internal/checkout"
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
 	"github.com/citadel-corp/eniqilo-store/internal/common/middleware"
 	"github.com/citadel-corp/eniqilo-store/internal/product"
@@ -61,6 +62,11 @@ func main() {
 	productService := product.NewService(productRepository)
 	productHandler := product.NewHandler(productService)
 
+	// initialize checkout domain
+	checkoutRepository := checkout.NewRepository(db)
+	checkoutService := checkout.NewService(checkoutRepository, userRepository, productRepository)
+	checkoutHandler := checkout.NewHandler(checkoutService)
+
 	r := mux.NewRouter()
 	r.Use(middleware.Logging)
 	r.Use(middleware.PanicRecoverer)
@@ -76,9 +82,14 @@ func main() {
 	sr.HandleFunc("/register", userHandler.CreateStaff).Methods(http.MethodPost)
 	sr.HandleFunc("/login", userHandler.StaffLogin).Methods(http.MethodPost)
 
-	// staff routes
+	// product routes
 	pr := v1.PathPrefix("/product").Subrouter()
 	pr.HandleFunc("", middleware.Authorized(productHandler.CreateProduct)).Methods(http.MethodPost)
+
+	// product checkout routes
+	pcr := pr.PathPrefix("/checkout").Subrouter()
+	pcr.HandleFunc("", middleware.Authorized(checkoutHandler.CheckoutProducts)).Methods(http.MethodPost)
+	pcr.HandleFunc("/history", middleware.Authorized(checkoutHandler.ListCheckoutHistories)).Methods(http.MethodGet)
 
 	// customer routes
 	cr := v1.PathPrefix("/customer").Subrouter()
