@@ -159,3 +159,29 @@ func (h *Handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 		Data:    products,
 	})
 }
+
+func (h *Handler) ListProductForCustomer(w http.ResponseWriter, r *http.Request) {
+	var req ListProductPayload
+
+	newSchema := schema.NewDecoder()
+	newSchema.IgnoreUnknownKeys(true)
+
+	if err := newSchema.Decode(&req, r.URL.Query()); err != nil {
+		response.JSON(w, http.StatusBadRequest, response.ResponseBody{})
+		return
+	}
+
+	products, err := h.service.ListForCustomers(r.Context(), req)
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, response.ResponseBody{
+			Message: "Internal server error",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.ResponseBody{
+		Message: "Products fetched successfully",
+		Data:    products,
+	})
+}

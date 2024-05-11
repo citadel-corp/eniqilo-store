@@ -11,6 +11,7 @@ type Service interface {
 	Edit(ctx context.Context, req EditProductPayload) error
 	Delete(ctx context.Context, req DeleteProductPayload) error
 	List(ctx context.Context, req ListProductPayload) ([]Product, error)
+	ListForCustomers(ctx context.Context, req ListProductPayload) ([]Product, error)
 }
 
 type productService struct {
@@ -81,6 +82,20 @@ func (s *productService) List(ctx context.Context, req ListProductPayload) ([]Pr
 		req.Limit = 5
 	}
 
+	products, err := s.repository.List(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return products, nil
+}
+
+func (s *productService) ListForCustomers(ctx context.Context, req ListProductPayload) ([]Product, error) {
+	if req.Limit == 0 {
+		req.Limit = 5
+	}
+
+	req.IsAvailable = "true"
 	products, err := s.repository.List(ctx, req)
 	if err != nil {
 		return nil, err
