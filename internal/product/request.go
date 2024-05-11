@@ -64,3 +64,13 @@ func (p EditProductPayload) Validate() error {
 		validation.Field(&p.IsAvailable, validation.Required),
 	)
 }
+
+type DeleteProductPayload struct {
+	ID string
+}
+
+func (p DeleteProductPayload) Validate() error {
+	return validation.ValidateStruct(&p,
+		validation.Field(&p.ID, validation.Required),
+	)
+}

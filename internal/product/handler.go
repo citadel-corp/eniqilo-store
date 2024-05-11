@@ -96,3 +96,39 @@ func (h *Handler) EditProduct(w http.ResponseWriter, r *http.Request) {
 		Message: "Product edited successfully",
 	})
 }
+
+func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	var req DeleteProductPayload
+
+	params := mux.Vars(r)
+	req.ID = params["id"]
+
+	err := req.Validate()
+	if err != nil {
+		response.JSON(w, http.StatusBadRequest, response.ResponseBody{
+			Message: "Bad request",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	err = h.service.Delete(r.Context(), req)
+	if err == ErrProductNotFound {
+		response.JSON(w, http.StatusNotFound, response.ResponseBody{
+			Message: "Not found",
+			Error:   err.Error(),
+		})
+		return
+	}
+	if err != nil {
+		response.JSON(w, http.StatusInternalServerError, response.ResponseBody{
+			Message: "Internal server error",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	response.JSON(w, http.StatusOK, response.ResponseBody{
+		Message: "Product deleted successfully",
+	})
+}

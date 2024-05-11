@@ -86,6 +86,7 @@ func main() {
 	pr := v1.PathPrefix("/product").Subrouter()
 	pr.HandleFunc("", middleware.Authorized(productHandler.CreateProduct)).Methods(http.MethodPost)
 	pr.HandleFunc("/{id}", middleware.Authorized(productHandler.EditProduct)).Methods(http.MethodPut)
+	pr.HandleFunc("/{id}", middleware.Authorized(productHandler.DeleteProduct)).Methods(http.MethodDelete)
 
 	// product checkout routes
 	pcr := pr.PathPrefix("/checkout").Subrouter()
