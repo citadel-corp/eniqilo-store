@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/citadel-corp/eniqilo-store/internal/common/db"
 )
@@ -88,7 +89,13 @@ func (d *dbRepository) ListCustomers(ctx context.Context, req ListCustomerPayloa
 		listQuery += "lower(name) = lower($1)"
 		params = append(params, req.Name)
 	}
-	rows, err := d.db.DB().QueryContext(ctx, listQuery, params...)
+	if strings.HasSuffix(listQuery, "AND ") {
+		listQuery, _ = strings.CutSuffix(listQuery, "AND ")
+	}
+	if strings.HasSuffix(listQuery, "WHERE ") {
+		listQuery, _ = strings.CutSuffix(listQuery, "WHERE ")
+	}
+	rows, err := d.db.DB().QueryContext(ctx, listQuery+";", params...)
 	if err != nil {
 		return nil, err
 	}

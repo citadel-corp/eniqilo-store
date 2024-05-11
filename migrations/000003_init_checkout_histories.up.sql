@@ -6,12 +6,10 @@ checkout_histories (
     paid INT NOT NULL,
     change INT NOT NULL,
     created_at TIMESTAMP DEFAULT current_timestamp
-    CONSTRAINT fk_user_id
-			FOREIGN KEY (user_id)
-			REFERENCES users(id)
-			ON DELETE CASCADE
-			ON UPDATE NO ACTION
 );
+
+ALTER TABLE checkout_histories
+	ADD CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS checkout_histories_user_id
 	ON checkout_histories USING HASH(user_id);

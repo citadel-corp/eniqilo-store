@@ -56,6 +56,9 @@ func (s *checkoutService) CheckoutProducts(ctx context.Context, req CheckoutRequ
 	if err != nil {
 		return err
 	}
+	if len(productIDs) != len(products) {
+		return ErrProductNotFound
+	}
 
 	price := int64(0)
 	for _, product := range products {
@@ -65,9 +68,9 @@ func (s *checkoutService) CheckoutProducts(ctx context.Context, req CheckoutRequ
 		if product.Stock-productMap[product.ID].Quantity < 0 {
 			return ErrProductStockNotEnough
 		}
-		price += product.Price
+		price += product.Price * int64(productMap[product.ID].Quantity)
 	}
-	if price <= int64(req.Paid) {
+	if int64(req.Paid) < price {
 		return ErrNotEnoughMoney
 	}
 	change := req.Paid - int(price)
@@ -85,12 +88,15 @@ func (s *checkoutService) CheckoutProducts(ctx context.Context, req CheckoutRequ
 }
 
 func (s *checkoutService) ListCheckoutHistories(ctx context.Context, req ListCheckoutHistoriesPayload) ([]*CheckoutHistoryResponse, error) {
-	req.CreatedAtSearchType = Ignore
+	req.CreatedAtSearchType = Descending
 	switch req.CreatedAt {
 	case "asc":
 		req.CreatedAtSearchType = Ascending
 	case "desc":
 		req.CreatedAtSearchType = Descending
+	}
+	if req.Limit == 0 {
+		req.Limit = 5
 	}
 	checkoutHistories, err := s.repository.ListCheckoutHistories(ctx, req)
 	if err != nil {

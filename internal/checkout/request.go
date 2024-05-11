@@ -18,12 +18,14 @@ func (p CheckoutRequest) Validate() error {
 }
 
 type ProductDetailRequest struct {
-	ProductID string `json:"productId"`
-	Quantity  int    `json:"quantity"`
+	ProductID     string `json:"productId"`
+	Quantity      int    `json:"quantity"`
+	OriginalStock int    `json:"originalStock"`
 }
 
 func (p ProductDetailRequest) Validate() error {
 	return validation.ValidateStruct(&p,
+		validation.Field(&p.ProductID, validation.Required),
 		validation.Field(&p.Quantity, validation.Required, validation.Min(1)),
 	)
 }
