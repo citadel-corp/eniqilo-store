@@ -19,7 +19,7 @@ type CreateProductPayload struct {
 	ImageURL    string          `json:"imageURL"`
 	Notes       string          `json:"notes"`
 	Price       int64           `json:"price"`
-	Stock       int             `json:"stock"`
+	Stock       *int            `json:"stock"`
 	Location    string          `json:"location"`
 	IsAvailable *bool           `json:"isAvailable"`
 }
@@ -35,7 +35,7 @@ func (p CreateProductPayload) Validate() error {
 		validation.Field(&p.ImageURL, validation.Required, imgUrlValidationRule),
 		validation.Field(&p.Notes, validation.Required, validation.Length(1, 200)),
 		validation.Field(&p.Price, validation.Required, validation.Min(1)),
-		validation.Field(&p.Stock, validation.Required, validation.Min(1)),
+		validation.Field(&p.Stock, validation.NotNil, validation.Min(0), validation.Max(100000)),
 		validation.Field(&p.Location, validation.Required, validation.Length(1, 200)),
 	)
 }
@@ -65,7 +65,7 @@ func (p EditProductPayload) Validate() error {
 		validation.Field(&p.ImageURL, validation.Required, imgUrlValidationRule),
 		validation.Field(&p.Notes, validation.Required, validation.Length(1, 200)),
 		validation.Field(&p.Price, validation.Required, validation.Min(1)),
-		validation.Field(&p.Stock, validation.Required, validation.Min(1)),
+		validation.Field(&p.Stock, validation.Required, validation.Min(1), validation.Max(100000)),
 		validation.Field(&p.Location, validation.Required, validation.Length(1, 200)),
 	)
 }

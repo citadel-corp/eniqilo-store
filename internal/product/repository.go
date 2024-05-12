@@ -214,5 +214,5 @@ func whereOrAnd(paramNo int) string {
 	if paramNo == 1 {
 		return "WHERE "
 	}
-	return "OR "
+	return "AND "
 }

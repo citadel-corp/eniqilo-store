@@ -4,5 +4,5 @@ import "time"
 
 type ProductResponse struct {
 	ID        string    `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time `json:"createdAt"`
 }

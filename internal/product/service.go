@@ -31,7 +31,7 @@ func (s *productService) Create(ctx context.Context, req CreateProductPayload) (
 		ImageURL:    req.ImageURL,
 		Notes:       req.Notes,
 		Price:       req.Price,
-		Stock:       req.Stock,
+		Stock:       *req.Stock,
 		Location:    req.Location,
 		IsAvailable: *req.IsAvailable,
 	}
